@@ -1,4 +1,4 @@
-const Kryolite =  require('../lib/kryolite.cjs');
+const Kryolite =  require('../lib/kryolite.cjs.js');
 
 async function test()
 {
