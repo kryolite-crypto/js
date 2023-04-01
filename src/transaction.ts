@@ -1,5 +1,5 @@
 import * as ed from '@noble/ed25519';
-import CryptoJS from 'crypto-js';
+import { sha256 } from '@noble/hashes/sha256';
 import bs58 from 'base-x';
 
 export const base58 = bs58('123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ');
@@ -98,9 +98,9 @@ export class Transaction
             buf.push(...decode(this.Signature));
         }
 
-        const hash = CryptoJS.SHA256(toBinaryString(buf));
+        const hash = sha256(Uint8Array.from(buf));
 
-        return encode(convertToUint8(hash));
+        return encode(hash);
     }
 
     public ToJsonString(): string
@@ -131,19 +131,4 @@ function toBinaryString(array: Array<number>) {
 		b_str += String.fromCharCode(array[i]);
 	}
 	return b_str;
-}
-
-function convertToUint8(wordArray: CryptoJS.lib.WordArray) {
-	var len = wordArray.words.length,
-		u8_array = new Uint8Array(len << 2),
-		offset = 0, word, i
-	;
-	for (i=0; i<len; i++) {
-		word = wordArray.words[i];
-		u8_array[offset++] = word >> 24;
-		u8_array[offset++] = (word >> 16) & 0xff;
-		u8_array[offset++] = (word >> 8) & 0xff;
-		u8_array[offset++] = word & 0xff;
-	}
-	return u8_array;
 }

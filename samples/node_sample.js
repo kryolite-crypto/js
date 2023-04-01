@@ -21,7 +21,7 @@ async function test()
     transaction.To = imported.Address;
     transaction.Value = 1_000_000; // 1 kryo
     transaction.MaxFee = 1;
-    transaction.Nonce = Date.now();
+    transaction.Nonce = (Date.now() / 1000).toFixed(0);
 
     await transaction.Sign(address.PrivateKey);
 

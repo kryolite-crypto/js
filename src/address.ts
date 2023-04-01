@@ -1,10 +1,11 @@
 
 import * as ed from '@noble/ed25519';
-import CryptoJS from 'crypto-js';
 import { base58 } from './transaction';
+import { sha256 } from '@noble/hashes/sha256';
+import { ripemd160 } from '@noble/hashes/ripemd160';
 
 const NETWORK = 0xA1;
-const WALLET_TYPE = 1;
+const WALLET_TYPE = 0;
 
 export class Address
 {
@@ -42,50 +43,20 @@ export class Address
 
 function toAddress(pubKey: Uint8Array)
 {
-    const decoder = new TextDecoder("utf-8");
     const encoder = new TextEncoder();
 
-    const shaHash = CryptoJS.SHA256(decoder.decode(pubKey));
-    const ripemdHash = CryptoJS.RIPEMD160(shaHash);
+    const shaHash = sha256(pubKey);
+    const ripemdHash = ripemd160(shaHash);
 
-    const addr = Uint8Array.from([NETWORK, WALLET_TYPE, ...toUint8(ripemdHash)]);
+    const addr = Uint8Array.from([NETWORK, WALLET_TYPE, ...ripemdHash]);
 
-    const stage1 = CryptoJS.SHA256(ripemdHash);
-    const stage2 = CryptoJS.SHA256(stage1);
+    const ripemdBytes = Uint8Array.from([...encoder.encode("kryo:"), ...addr]);
 
-    const rawStr = convertUint8ArrayToBinaryString(addr) + convertUint8ArrayToBinaryString(toUint8(stage2).slice(0, 4));
-    const bytes = Uint8Array.from(convertBinaryStringToUint8Array(rawStr));
+    const stage1 = sha256(ripemdBytes);
+    const stage2 = sha256(stage1);
+
+    const final = [...addr, ...stage2.slice(0, 4)];
+    const bytes = Uint8Array.from(final);
 
     return 'kryo:' + base58.encode(bytes);
-}
-
-function toUint8(wordArray: CryptoJS.lib.WordArray) {
-	var len = wordArray.words.length,
-		u8_array = new Uint8Array(len << 2),
-		offset = 0, word, i
-	;
-	for (i=0; i<len; i++) {
-		word = wordArray.words[i];
-		u8_array[offset++] = word >> 24;
-		u8_array[offset++] = (word >> 16) & 0xff;
-		u8_array[offset++] = (word >> 8) & 0xff;
-		u8_array[offset++] = word & 0xff;
-	}
-	return u8_array;
-}
-
-function convertUint8ArrayToBinaryString(u8Array: Uint8Array) {
-	var i, len = u8Array.length, b_str = "";
-	for (i=0; i<len; i++) {
-		b_str += String.fromCharCode(u8Array[i]);
-	}
-	return b_str;
-}
-
-function convertBinaryStringToUint8Array(bStr: string) {
-	var i, len = bStr.length, u8_array = new Uint8Array(len);
-	for (i = 0; i < len; i++) {
-		u8_array[i] = bStr.charCodeAt(i);
-	}
-	return u8_array;
 }
